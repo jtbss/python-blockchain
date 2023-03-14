@@ -1,15 +1,40 @@
+MINING_REWARD = 10  # 挖矿奖励
+
 genesis_block = {
     'previous_hash': '',
     'index': 0,
-    'transaction': []
+    'transactions': []
 }
 blockchain = list([genesis_block])
 open_transactions = list()
 owner = 'Gamtin'
+participants = {'Gamtin'}
 
 
 def hash_block(block):
     return '-'.join([str(block[key]) for key in block])
+
+
+# 计算用户的余额
+def get_balance(participant):
+    # 获得过往交易中用户发送出去的所有金额记录
+    tx_sender = [[tx['amount'] for tx in block['transactions'] if tx['sender'] == participant] for block in blockchain]
+    # 获得在交易池中用户发出去的金额记录
+    open_tx_sender = [tx['amount'] for tx in open_transactions if tx['sender'] == participant]
+    tx_sender.append(open_tx_sender)
+    amount_sent = 0
+    for tx in tx_sender:
+        if len(tx) > 0:
+            amount_sent += tx[0]
+
+    # 获得过往交易中用户总共得到的数量
+    tx_recipient = [[tx['amount'] for tx in block['transactions']
+                     if tx['recipient'] == participant] for block in blockchain]
+    amount_received = 0
+    for tx in tx_recipient:
+        if len(tx) > 0:
+            amount_received += tx[0]
+    return amount_received - amount_sent  # 获得-送出去=余额
 
 
 def get_last_blockchain_value():
@@ -19,6 +44,16 @@ def get_last_blockchain_value():
     return blockchain[-1]
 
 
+# 校验交易
+def verify_transaction(transaction):
+    sender_balance = get_balance(transaction['sender'])
+    if sender_balance >= transaction['amount']:  # 检验发送方的余额是否多于本次交易的金额
+        return True
+    else:
+        return False
+
+
+# 新增交易
 def add_transaction(recipient, sender=owner, amount=1.0):
     """
     Arguments:
@@ -26,25 +61,34 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         :recipient: The recipient of the coins.
         :amont: The amount of coins sent with the transaction (default=1.0)
     """
-
-    # if last_transaction == None:
-    #     last_transaction = [1]
-    # blockchain.append([last_transaction, transaction_amount])
     transaction = {
         'sender': sender,
         'recipient': recipient,
         'amount': amount
     }
-    open_transactions.append(transaction)
+    if verify_transaction(transaction):
+        open_transactions.append(transaction)
+        participants.add(sender)
+        participants.add(recipient)
+        return True
+    return False
 
 
+# 挖矿
 def mine_block():
     # pass
     last_block = blockchain[-1]
     # 给上一个块进行 hash 计算
     hashed_block = hash_block(last_block)
-    
-    block = {
+    reward_transaction = {  # 系统奖励
+        'sender': 'SYSTEM',
+        'recipient': owner,
+        'amount': MINING_REWARD
+    }
+
+    copied_transactions = open_transactions[:]  # 复制交易池记录（未加入奖励交易之前的）（深拷贝！）
+    open_transactions.append(reward_transaction)
+    block = {  # 创建新块
         'previous_hash': hashed_block,
         'index': len(blockchain),
         'transactions': open_transactions
@@ -52,6 +96,7 @@ def mine_block():
 
     # 加入新块
     blockchain.append(block)
+    return True
 
 
 def get_transaction_value():
@@ -91,7 +136,8 @@ while waiting_for_input:
     print('0: Print full blockchain')
     print('1: Add a new transacntion value')
     print('2: Mine a new block')
-    print('3: Output the blockahcin amount')
+    print('3: Output the blockahcin blocks')
+    print('4: Output participants')
     print('h: Manipulate the chain')
     print('q: Quit')
 
@@ -102,14 +148,23 @@ while waiting_for_input:
         tx_data = get_transaction_value()
         recipient, amount = tx_data
 
-        add_transaction(recipient, amount=amount)
+        if add_transaction(recipient, amount=amount): # 如果新增交易成功
+            print('Added transaction!')
+        else:
+            print('Transaction failed!')
+        print('-' * 20)
+        print('Open transactions')
         print(open_transactions)
+        print('-' * 20)
     elif user_choice == '0':
         print(blockchain)
     elif user_choice == '2':
-        mine_block()
+        if mine_block():
+            open_transactions = []  # 挖矿成功，交易池清空
     elif user_choice == '3':
         print_blockchain_elements()
+    elif user_choice == '4':
+        print(participants)
     elif user_choice == 'h':  # 模拟hack攻击
         if len(blockchain) >= 1:
             blockchain[0] = {
@@ -130,6 +185,7 @@ while waiting_for_input:
         print_blockchain_elements()
         print('Invalid blockchain!')
         break
+    print('User\'s balance:', get_balance('Gamtin'))
 else:
     print('User left!')
 
