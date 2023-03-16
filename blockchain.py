@@ -1,9 +1,15 @@
-MINING_REWARD = 10  # 挖矿奖励
+from functools import reduce
+import hashlib as hl
+import json
+from collections import OrderedDict
+
+MINING_REWARD = 10.0  # 挖矿奖励
 
 genesis_block = {
     'previous_hash': '',
     'index': 0,
-    'transactions': []
+    'transactions': [],
+    'proof': 100  # 因为是 genesis block，所以值可以随便设置
 }
 blockchain = list([genesis_block])
 open_transactions = list()
@@ -11,8 +17,34 @@ owner = 'Gamtin'
 participants = {'Gamtin'}
 
 
+# 使用 SHA256 对区块进行 hash 计算
 def hash_block(block):
-    return '-'.join([str(block[key]) for key in block])
+    """Hashes a block and returns a string representation of it
+
+    Arguments
+        block: The block that should be hashed 
+    """
+    # sort_keys 设置为 True 是因为要避免因为某种原因，字典里的 key 顺序发生了改变，而导致同一个字典（里面的 key 顺序不一致）的 hash 值不一样，进而验证失败
+    return hl.sha256(json.dumps(block, sort_keys=True).encode()).hexdigest()
+
+
+# 工作量证明 Proof-of-work
+# SHA256(交易记录 + 上一个块的hash值 + 随机数)
+def valid_proof(transactions, last_hash, proof):
+    guess = (str(transactions) + str(last_hash) + str(proof)).encode()
+    guess_hash = hl.sha256(guess).hexdigest()
+    # print(guess_hash)
+    return guess_hash[0:2] == '00'
+
+
+# 工作量证明 Proof-of-work
+def proof_of_work():
+    last_block = blockchain[-1]
+    last_hash = hash_block(last_block)
+    proof = 0
+    while not valid_proof(open_transactions, last_hash, proof):
+        proof +=1
+    return proof
 
 
 # 计算用户的余额
@@ -22,21 +54,25 @@ def get_balance(participant):
     # 获得在交易池中用户发出去的金额记录
     open_tx_sender = [tx['amount'] for tx in open_transactions if tx['sender'] == participant]
     tx_sender.append(open_tx_sender)
-    amount_sent = 0
-    for tx in tx_sender:
-        if len(tx) > 0:
-            amount_sent += tx[0]
+
+    amount_sent = reduce(lambda tx_sum, tx_amt: tx_sum + sum(tx_amt), tx_sender, 0) # 简化版
+    # amount_sent = 0
+    # for tx in tx_sender:
+    #     if len(tx) > 0:
+    #         amount_sent += sum(tx)
 
     # 获得过往交易中用户总共得到的数量
-    tx_recipient = [[tx['amount'] for tx in block['transactions']
-                     if tx['recipient'] == participant] for block in blockchain]
-    amount_received = 0
-    for tx in tx_recipient:
-        if len(tx) > 0:
-            amount_received += tx[0]
-    return amount_received - amount_sent  # 获得-送出去=余额
+    tx_recipient = [[tx['amount'] for tx in block['transactions'] if tx['recipient'] == participant] for block in blockchain]
+    amount_received = reduce(lambda tx_sum, tx_amt: tx_sum + sum(tx_amt), tx_recipient, 0) # 简化版
+    # amount_received = 0
+    # for tx in tx_recipient:
+    #     if len(tx) > 0:
+    #         amount_received += tx[0]
+
+    return amount_received - amount_sent  # 获得 - 送出去 = 余额
 
 
+# 获取最后一个区块
 def get_last_blockchain_value():
     """ Returns the last value of the current blockchian. """
     if len(blockchain) < 1:
@@ -53,6 +89,12 @@ def verify_transaction(transaction):
         return False
 
 
+# 校验交易列表
+def verify_transactions():
+    # all 的作用就是检验列表中的值是否都为 True
+    return all([verify_transaction(tx) for tx in open_transactions])
+
+
 # 新增交易
 def add_transaction(recipient, sender=owner, amount=1.0):
     """
@@ -61,11 +103,11 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         :recipient: The recipient of the coins.
         :amont: The amount of coins sent with the transaction (default=1.0)
     """
-    transaction = {
-        'sender': sender,
-        'recipient': recipient,
-        'amount': amount
-    }
+    transaction = OrderedDict([ # 只用 python 内置的 OrderedDict 库创建排好序的字典
+        ('sender', sender),
+        ('recipient', recipient),
+        ('amount', amount)
+    ])
     if verify_transaction(transaction):
         open_transactions.append(transaction)
         participants.add(sender)
@@ -76,22 +118,24 @@ def add_transaction(recipient, sender=owner, amount=1.0):
 
 # 挖矿
 def mine_block():
-    # pass
+    """Create a new block and add open transactions to it."""
     last_block = blockchain[-1]
-    # 给上一个块进行 hash 计算
-    hashed_block = hash_block(last_block)
-    reward_transaction = {  # 系统奖励
-        'sender': 'SYSTEM',
-        'recipient': owner,
-        'amount': MINING_REWARD
-    }
+    hashed_block = hash_block(last_block)  # 计算上一个块的 hash 值
+    proof = proof_of_work() # PoW只针对 open_transactions 里的交易，不包括系统奖励的交易
+
+    reward_transaction = OrderedDict([ # 系统奖励
+        ('sender', 'SYSTEM'),
+        ('recipient', owner),
+        ('amount', MINING_REWARD)
+    ])
 
     copied_transactions = open_transactions[:]  # 复制交易池记录（未加入奖励交易之前的）（深拷贝！）
-    open_transactions.append(reward_transaction)
+    copied_transactions.insert(0, reward_transaction) # 将系统奖励的coins加进去
     block = {  # 创建新块
         'previous_hash': hashed_block,
         'index': len(blockchain),
-        'transactions': open_transactions
+        'transactions': copied_transactions,
+        'proof': proof
     }
 
     # 加入新块
@@ -99,6 +143,7 @@ def mine_block():
     return True
 
 
+# 用户输入交易金额
 def get_transaction_value():
     tx_recipient = input('Enter the recipient of the transaction: ')
     tx_amount = float(input('Your transacntion amount please: '))
@@ -106,11 +151,13 @@ def get_transaction_value():
     return tx_recipient, tx_amount
 
 
+# 用户选择功能
 def get_user_choice():
     user_input = input('Your choice: ')
     return user_input
 
 
+# 打印当前区块链中的区块
 def print_blockchain_elements():
     for block in blockchain:
         print('Outputting Block')
@@ -119,12 +166,18 @@ def print_blockchain_elements():
         print('-' * 20)
 
 
+# 验证区块中的 hash 值
 def verify_chain():
     # block_index = 0
     for (index, block) in enumerate(blockchain):
         if index == 0:
             continue
         if block['previous_hash'] != hash_block(blockchain[index - 1]):
+            return False
+        
+        # block['transactions'][1:] 这样写是因为我把系统奖励的交易放在了第0个，要排除掉系统奖励的交易，因此从下标1开始
+        if not valid_proof(block['transactions'][1:], block['previous_hash'], block['proof']):
+            print('Proof of work is invalid')
             return False
     return True
 
@@ -138,6 +191,7 @@ while waiting_for_input:
     print('2: Mine a new block')
     print('3: Output the blockahcin blocks')
     print('4: Output participants')
+    print('5: Check transaction validity')
     print('h: Manipulate the chain')
     print('q: Quit')
 
@@ -165,6 +219,11 @@ while waiting_for_input:
         print_blockchain_elements()
     elif user_choice == '4':
         print(participants)
+    elif user_choice == '5':
+        if verify_transactions():
+            print('All transactions are valid.')
+        else:
+            print('There are invalid transactions.')
     elif user_choice == 'h':  # 模拟hack攻击
         if len(blockchain) >= 1:
             blockchain[0] = {
@@ -185,7 +244,7 @@ while waiting_for_input:
         print_blockchain_elements()
         print('Invalid blockchain!')
         break
-    print('User\'s balance:', get_balance('Gamtin'))
+    print('Balance of {}: {:6.2f}'.format(owner, get_balance(owner)))
 else:
     print('User left!')
 
