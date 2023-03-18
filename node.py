@@ -1,10 +1,10 @@
-from flask import Flask, jsonify, request, json
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 from wallet import Wallet
 from blockchain import Blockchain
 
-app = Flask(__name__) # 随便传个名字进去都行
+app = Flask(__name__, template_folder='ui', static_folder='ui', static_url_path='/ui') # 随便传个名字进去都行
 app.config['JSON_AS_ASCII'] = False
 wallet = Wallet()
 blockchain = Blockchain(wallet.public_key)
@@ -29,7 +29,6 @@ def create_keys():
         }
         return jsonify(response), 500
 
-
 # 查看钱包
 @app.route('/wallet', methods=['GET'])
 def load_keys():
@@ -48,7 +47,6 @@ def load_keys():
         }
         return jsonify(response), 500
 
-
 # 查看余额
 @app.route('/balance', methods=['GET'])
 def get_balance():
@@ -66,11 +64,9 @@ def get_balance():
         }
         return jsonify(response), 500
 
-
 @app.route('/', methods=['GET'])
 def get_ui():
-    return 'This workd!'
-
+    return send_from_directory('ui', 'index.html')
 
 # 新增交易
 @app.route('/transaction', methods=['POST'])
@@ -122,7 +118,6 @@ def add_transaction():
         }
         return jsonify(response), 500
 
-
 # 挖矿
 @app.route('/mine', methods=['POST'])
 def mine():
@@ -143,7 +138,6 @@ def mine():
       }
       return jsonify(response), 500
 
-
 # 获取交易池
 @app.route('/transactions', methods=['GET'])
 def get_open_transaction():
@@ -154,7 +148,6 @@ def get_open_transaction():
         'transactions': dict_transactions
     }
     return jsonify(response), 200
-
 
 # 获取区块链信息
 @app.route('/chain', methods=['GET'])

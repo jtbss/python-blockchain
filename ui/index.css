@@ -1,0 +1,50 @@
+body {
+  padding: 0;
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.app {
+  padding-top: 20px;
+}
+.header {
+  padding: 0 20px;
+  font-size: 35px;
+  font-weight: bold;
+}
+.content {
+  padding: 0 20px;
+}
+.wallet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.balance {
+  font-size: 30px;
+  font-weight: bold;
+}
+.el-alert {
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+.blocks {
+  padding-top: 20px;
+}
+.blocks .previous-hash {
+  font-size: 15px;
+}
+.el-collapse {
+  border-top: none;
+}
+.el-collapse-item__header {
+  font-size: 15px;
+}
+.transactions {
+  padding: 5px 0;
+}
+.tx {
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 15px;
+}

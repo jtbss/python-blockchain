@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <!-- <link rel="stylesheet" href="/ui/element.css"> -->
+  <link rel="stylesheet" href="/ui/index.css">
+  <title>COMP7200 Blockchain</title>
+</head>
+<body>
+  <el-container class="app" id="app">
+    <el-header class="header">COMP7200 Blockchian - BU Coins</el-header>
+    <div class="content">
+      <div class="wallet">
+        <el-row class="actions">
+          <el-button type="primary">Create new Wallet</el-button>
+          <el-button type="primary">Load Wallet</el-button>
+        </el-row>
+        <div class="balance">Balance:0</div>
+      </div>
+
+      <el-divider class="divider"></el-divider>
+
+      <el-alert
+        class="el-alert"
+        :closable="false"
+        type="success"
+        title="Create a Wallet to start your coin trip!"></el-alert>
+      
+      <el-divider class="divider"></el-divider>
+      
+      <el-tabs type="card" @tab-click="tabClick">
+        <el-tab-pane label="Blockchain">
+          <div class="blockchain">
+            <el-button type="primary">Load Blockchain</el-button>
+            <el-collapse v-model="activeBlockName" @change="collapseChange">
+              <div class="blocks" :key="block.index" v-for="block in blockchain">
+                <!-- <div class="name">Block #{{block.index}}</div> -->
+                <el-collapse-item :title="'Block #' + block.index" :name="block.index">
+                  <div class="previous-hash">Previous Hash: {{block.previous_hash}}</div>
+                  <div class="transactions" v-for="(tx, idx) in block.transactions" :key="idx + 'id'">
+                    <div class="tx">
+                      <div>Sender: {{tx.sender}}</div>
+                      <div>Recipient: {{tx.recipient}}</div>
+                      <div>Amount: {{tx.amount}}</div>
+                    </div>
+                  </div>
+                </el-collape-item>
+              </div>
+            </el-collapse>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="Open Transactions">
+          <div class="open-transactions">
+            <el-button type="primary">Load Transactions</el-button>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+    </div>
+  </el-container>
+  <script src="/ui/vue.js"></script>
+  <script src="/ui/elementui.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        course: 'COMP7200 Blockchain',
+        activeBlockName: '',
+        blockchain: [
+          {
+            index: 1,
+            previous_hash: 'abcdefg111222',
+            transactions: [
+              {
+                sender: 'MINING',
+                recipient: 'Jiangjt',
+                amount: 10.0
+              },
+              {
+                sender: 'Jiangjt',
+                recipient: 'Hely',
+                amount: 10.5
+              },
+              {
+                sender: 'Hely',
+                recipient: 'Wnagyc',
+                amount: 15.0
+              }
+            ]
+          },
+          {
+            index: 0,
+            previous_hash: 'aldfsjad',
+            transactions: [
+              {
+                sender: 'MINING',
+                recipient: 'Jiangjt',
+                amount: 10.0
+              }
+            ]
+          }
+        ]
+      },
+      methods: {
+        tabClick: function(tab, event) {
+          console.info(tab, event )
+        },
+        collapseChange: function() {
+          console.info('change')
+        }
+      }
+    })
+  </script>
+</body>
+</html>
