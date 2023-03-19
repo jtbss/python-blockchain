@@ -91,7 +91,7 @@ def add_transaction():
         }
         return jsonify(response), 400
     recipient = values['recipient']
-    amount = values['amount']
+    amount = float(values['amount'])
     signature = wallet.sign_transaction(wallet.public_key, recipient, amount)
     success = blockchain.add_transaction(
         recipient,
@@ -143,10 +143,7 @@ def mine():
 def get_open_transaction():
     transactions = blockchain.get_open_transactions()
     dict_transactions = [tx.__dict__ for tx in transactions]
-    response = {
-        'message': 'Fetched transaction successfully.',
-        'transactions': dict_transactions
-    }
+    response = dict_transactions
     return jsonify(response), 200
 
 # 获取区块链信息
