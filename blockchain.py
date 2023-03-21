@@ -124,8 +124,8 @@ class Blockchain:
 
     # 计算用户的余额
     def get_balance(self, sender=None):
-        if sender == None:
-            if self.public_key == None:
+        if sender is None:
+            if self.public_key is None:
                 return None
 
             participant = self.public_key

@@ -47,7 +47,14 @@ class Wallet:
     def generate_keys(self):
         private_key = RSA.generate(1024, Crypto.Random.new().read)
         public_key = private_key.publickey()
-        return binascii.hexlify(private_key.exportKey(format='DER')).decode('ascii'), binascii.hexlify(public_key.exportKey(format='DER')).decode('ascii')
+        return (
+                binascii
+                .hexlify(private_key.exportKey(format='DER'))
+                .decode('ascii'),
+                binascii
+                .hexlify(public_key.exportKey(format='DER'))
+                .decode('ascii')
+            )
     
     # 生成签名
     def sign_transaction(self, sender, recipient, amount):
