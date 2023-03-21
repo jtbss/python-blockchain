@@ -29,4 +29,5 @@ Install `pycryptodome`, instead of `pycrypto`.
 pip install pycryptodome
 ```
 ## Reference
-https://www.bilibili.com/video/BV1Hb411c7oH/
+1. https://www.bilibili.com/video/BV1Hb411c7oH/
+2. https://www.udemy.com/course/learn-python-by-building-a-blockchain-cryptocurrency/?couponCode=D_0323
