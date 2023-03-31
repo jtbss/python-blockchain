@@ -1,4 +1,5 @@
 from functools import reduce
+from uuid import uuid4
 import json
 import requests
 # import pickle
@@ -56,7 +57,7 @@ class Blockchain:
                 blockchain = json.loads(file_content[0][:-1]) # 加[:-1]是为了去掉结尾的 \n
                 updated_blockchain = []
                 for block in blockchain:
-                    converted_tx = [Transaction(tx['sender'], tx['recipient'], tx['signature'], tx['amount']) for tx in block['transactions']]
+                    converted_tx = [Transaction(tx['txid'], tx['sender'], tx['recipient'], tx['signature'], tx['amount']) for tx in block['transactions']]
                     updated_block = Block(
                         block['index'],
                         block['previous_hash'],
@@ -74,7 +75,7 @@ class Blockchain:
                 open_transactions = json.loads(file_content[1][:-1]) # 加[:-1]是为了去掉结尾的 \n
                 updated_open_transactions = []
                 for tx in open_transactions:
-                    updated_transaction = Transaction(tx['sender'], tx['recipient'], tx['signature'], tx['amount'])
+                    updated_transaction = Transaction(tx['txid'], tx['sender'], tx['recipient'], tx['signature'], tx['amount'])
                     updated_open_transactions.append(updated_transaction)
                 self.__open_transactions = updated_open_transactions
                 
@@ -168,7 +169,8 @@ class Blockchain:
         """
         # if self.public_key == None:
         #     return False
-        transaction = Transaction(sender, recipient, signature, amount)
+        txid = str(uuid4())
+        transaction = Transaction(txid, sender, recipient, signature, amount)
 
         if Verification.verify_transaction(transaction, self.get_balance):
             self.__open_transactions.append(transaction)
@@ -198,14 +200,15 @@ class Blockchain:
         hashed_block = hash_block(last_block)  # 计算上一个块的 hash 值
         proof = self.proof_of_work() # PoW只针对 open_transactions 里的交易，不包括系统奖励的交易
 
-        reward_transaction = Transaction('MINING', self.public_key, '', MINING_REWARD) # 系统奖励
+        txid = str(uuid4())
+        reward_transaction = Transaction(txid, 'MINING', self.public_key, '', MINING_REWARD) # 系统奖励
 
         copied_transactions = self.__open_transactions[:]  # 复制交易池记录（未加入奖励交易之前的）（深拷贝！）
         for tx in copied_transactions: # 验证签名
             if not Wallet.verify_transaction(tx):
                 return None
         
-        copied_transactions.append(reward_transaction) # 将系统奖励的coins加进去
+        copied_transactions.append(reward_transaction) # 将系统奖励的 coinbase transaction 加进去
         block = Block(  # 创建新块
             len(self.__chain),
             hashed_block,
@@ -235,7 +238,7 @@ class Blockchain:
 
     # 收到其他节点的广播，进行加块处理
     def add_block(self, block):
-        transactions = [Transaction(tx['sender'], tx['recipient'], tx['signature'], tx['amount']) for tx in block['transactions']]
+        transactions = [Transaction(tx['txid'], tx['sender'], tx['recipient'], tx['signature'], tx['amount']) for tx in block['transactions']]
         proof_is_valid = Verification.valid_proof(transactions[:-1], block['previous_hash'], block['proof'])
         hashes_match = hash_block(self.chain[-1]) == block['previous_hash']
         if not proof_is_valid or not hashes_match:
@@ -268,7 +271,7 @@ class Blockchain:
                 node_chain = response.json()
                 node_chain = [Block(block['index'],
                                     block['previous_hash'],
-                                    [Transaction(tx['sender'], tx['recipient'], tx['signature'], tx['amount']) for tx in block['transactions']],
+                                    [Transaction(tx['txid'], tx['sender'], tx['recipient'], tx['signature'], tx['amount']) for tx in block['transactions']],
                                     block['proof'],
                                     block['timestamp']) for block in node_chain]
                 

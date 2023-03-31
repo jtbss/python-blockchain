@@ -81,6 +81,7 @@
                   <div class="previous-hash"><span style="font-weight:bold">Previous Hash: </span>{{block.previous_hash || "0000"}}</div>
                   <div class="transactions" v-for="(tx, idx) in block.transactions" :key="idx + 'id'">
                     <div class="tx">
+                      <div><span style="font-weight:bold">TxID: </span>{{tx.txid}}</div>
                       <div><span style="font-weight:bold">Sender: </span>{{tx.sender}}</div>
                       <div><span style="font-weight:bold">Recipient: </span>{{tx.recipient}}</div>
                       <div><span style="font-weight:bold">Amount: </span>{{tx.amount}}</div>
@@ -99,6 +100,7 @@
               <div class="openTx" :key="tx.index" v-for="(tx, index) in openTransactions">
                 <el-collapse-item :title="'Transactions #' + index" :name="tx.index">
                   <div class="tx">
+                    <div><span style="font-weight:bold">TxID: </span>{{tx.txid}}</div>
                     <div><span style="font-weight:bold">Sender: </span>{{tx.sender}}</div>
                     <div><span style="font-weight:bold">Recipient: </span>{{tx.recipient}}</div>
                     <div><span style="font-weight:bold">Amount: </span>{{tx.amount}}</div>
@@ -279,7 +281,7 @@
               vm.balance = response.data.funds
               console.log(response.data)
               vm.dataLoading = false
-              // vm.onLoadData()
+              vm.onLoadData()
             })
             .catch(function (error) {
               vm.success = null
@@ -296,7 +298,7 @@
               vm.error = null
               vm.success = response.data.message
               vm.dataLoading = false
-              // vm.onLoadData()
+              vm.onLoadData()
             })
             .catch(error => {
               vm.success = null
