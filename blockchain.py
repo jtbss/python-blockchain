@@ -212,7 +212,8 @@ class Blockchain:
         block = Block(  # 创建新块
             len(self.__chain),
             hashed_block,
-            copied_transactions, proof
+            copied_transactions,
+            proof
         )
 
         # 加入新块
