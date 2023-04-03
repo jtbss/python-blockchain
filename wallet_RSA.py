@@ -1,4 +1,7 @@
-from ecdsa import SigningKey, VerifyingKey, SECP256k1
+from Crypto.PublicKey import RSA  # pycrypto 包
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.Hash import SHA256
+import Crypto.Random
 import binascii
 
 class Wallet:
@@ -40,26 +43,32 @@ class Wallet:
             print('Loading wallet failed...')
             return False
 
-    # 用ECC生成并返回公私钥对
+    # 用RSA生成并返回公私钥对
     def generate_keys(self):
-        sk = SigningKey.generate(curve=SECP256k1)
-        vk = sk.get_verifying_key()
-        return (binascii.hexlify(sk.to_string()).decode('ascii'),
-                binascii.hexlify(vk.to_string()).decode('ascii'))
-
-    # 生成签名 签名的时候的 DER 编码转成 uncompressed 编码
+        private_key = RSA.generate(1024, Crypto.Random.new().read)
+        public_key = private_key.publickey()
+        return (
+                binascii
+                .hexlify(private_key.exportKey(format='DER'))
+                .decode('ascii'),
+                binascii
+                .hexlify(public_key.exportKey(format='DER'))
+                .decode('ascii')
+            )
+    
+    # 生成签名
     def sign_transaction(self, sender, recipient, amount):
-
-        sk = SigningKey.from_string(binascii.unhexlify(self.private_key), curve=SECP256k1)
-        h = (str(sender) + str(recipient) + str(amount)).encode('utf8')
-        signature = sk.sign(h) # 生成出来的签名的二进制的
-        #signature的格式是DER编码的，需要转成uncompressed编码
-        return binascii.hexlify(signature).decode('ascii')
+        signer = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(self.private_key))) # type: ignore
+        h = SHA256.new((str(sender) + str(recipient) + str(amount)).encode('utf8'))
+        signature = signer.sign(h) # 生成出来的签名的二进制的
+        return binascii.hexlify(signature).decode('ascii') # 用 hexlify 转成十六进制，使用 ascii 编码
 
     # 验证签名
     @staticmethod
     def verify_transaction(transaction):
-        vk = VerifyingKey.from_string(binascii.unhexlify(transaction.sender), curve=SECP256k1)
-        h = (str(transaction.sender) + str(transaction.recipient) + str(transaction.amount)).encode('utf8')
-        return vk.verify(binascii.unhexlify(transaction.signature), h)
-        #verify always return True or False
+        # if transaction.sender == 'MINING':
+        #     return True
+        public_key = RSA.importKey(binascii.unhexlify(transaction.sender))
+        verifier = PKCS1_v1_5.new(public_key)
+        h = SHA256.new((str(transaction.sender) + str(transaction.recipient) + str(transaction.amount)).encode('utf8'))
+        return verifier.verify(h, binascii.unhexlify(transaction.signature))
