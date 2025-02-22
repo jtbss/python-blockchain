@@ -26,6 +26,14 @@
         :title="success"></el-alert>
       
       <div v-if="error || success" style="height:10px"></div>
+
+      <el-alert
+        v-if="publicKey"
+        class="el-alert"
+        type="info"
+        :title="`Public Key: ${publicKey}`"></el-alert>
+      
+      <div v-if="error || publicKey" style="height:10px"></div>
   
       <div class="wallet" v-loading="walletLoading">
         <el-row class="actions">
@@ -139,12 +147,18 @@
         showElement: null,
         error: null,
         success: null,
+        publicKey: null,
+        privateKey: null,
         balance: 0,
         txOpitons: false,
         outgoingTx: {
           recipient: null,
           amount: 0.0
         },
+      },
+      created: function () {
+        this.onLoadWallet()
+        this.onLoadData()
       },
       computed: {
         loadedData: function () {
@@ -191,7 +205,9 @@
           axios.get('/wallet')
             .then(function (response) {
               vm.error = null
-              vm.success = 'Loaded Wallet! Public Key: ' + response.data.public_key + ' ------------- Private Key: ' + response.data.private_key
+              vm.success = 'Wallet Loaded!'
+              vm.publicKey = response.data.public_key
+              vm.privateKey = response.data.private_key
               vm.wallet = {
                 public_key: response.data.public_key,
                 private_key: response.data.private_key

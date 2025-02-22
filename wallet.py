@@ -5,7 +5,7 @@ class Wallet:
     def __init__(self, node_id):
         self.private_key = None
         self.public_key = None  # 公钥作为每个钱包的地址
-        self.node_id = node_id
+        self.node_id = node_id  # 端口号
 
     # 将公私钥保存到变量中
     def create_keys(self):
