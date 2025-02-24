@@ -92,7 +92,7 @@
           })
         },
         onRmoveNode: function(url) {
-          axios.delete('/node/' + url)
+          axios.delete('/node', { data: { node: url } })
             .then(response => {
               this.success = 'Delete node successfully'
               this.error = null
