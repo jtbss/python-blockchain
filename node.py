@@ -259,7 +259,6 @@ def add_node():
         }
         return jsonify(response), 400
     node = values.get('node')
-    node = values['node']
     print(node)
     blockchain.add_peer_node(node)
     response = {
@@ -272,11 +271,6 @@ def add_node():
 # 删除节点
 @app.route('/node', methods=['DELETE'])
 def remove_node():
-    # if node_url == "" or node_url is None:
-    #     response = {
-    #         'message': 'No node found.'
-    #     }
-    #     return jsonify(response), 400
     values = request.get_json() if request.data else None
     if not values:
         response = {
@@ -284,7 +278,6 @@ def remove_node():
         }
         return jsonify(response), 400
     node = values.get('node')
-    node = values['node']
 
     blockchain.remove_peer_node(node)
     response = {
